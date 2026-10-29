@@ -2,11 +2,15 @@
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
-  create() {
+  create(data = {}) {
     const c = COIN_DASH;
-    this.score = 0;
+    this.level = data.level || 1;
+    const lv = this.levelConfig = c.levels[this.level - 1];
+    this.score = data.score || 0;
+    this.levelStartScore = this.score;
     this.finished = false;
-    this.deadline = this.time.now + c.roundSeconds * 1000;
+    this.won = false;
+    this.deadline = this.time.now + lv.seconds * 1000;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
@@ -19,22 +23,25 @@ class CoinDash extends Phaser.Scene {
     this.coin.body.setCircle(9);
     this.placeCoin();
     this.drones = this.physics.add.group();
-    for (let i = 0; i < c.droneCount; i++) {
-      const drone = this.add.rectangle(90 + i * 270, 100, 26, 26, c.colors.drone);
+    for (let i = 0; i < lv.droneCount; i++) {
+      const drone = this.add.rectangle((i + 0.5) * c.width / lv.droneCount, 100, 26, 26, c.colors.drone);
       this.drones.add(drone);
       drone.body.setCollideWorldBounds(true).setBounce(1, 1);
       const angle = (35 + i * 105) * Math.PI / 180;
-      drone.body.setVelocity(Math.cos(angle) * c.droneSpeed, Math.sin(angle) * c.droneSpeed);
+      drone.body.setVelocity(Math.cos(angle) * lv.droneSpeed, Math.sin(angle) * lv.droneSpeed);
     }
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
       this.score++;
-      this.placeCoin();
+      if (this.score - this.levelStartScore >= lv.coins) this.completeLevel();
+      else this.placeCoin();
     });
     this.physics.add.overlap(this.player, this.drones, () => this.finish('A drone caught you!'));
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
-    this.input.keyboard.on('keydown-R', () => this.scene.restart());
+    // R retries the current level (score back to where it began); after a win it starts over.
+    this.input.keyboard.on('keydown-R', () => this.scene.restart(
+      this.won ? {} : { level: this.level, score: this.levelStartScore }));
   }
 
   placeCoin() {
@@ -58,20 +65,39 @@ class CoinDash extends Phaser.Scene {
     const direction = new Phaser.Math.Vector2(dx, dy).normalize().scale(COIN_DASH.playerSpeed);
     this.player.body.setVelocity(direction.x, direction.y);
     const seconds = Math.max(0, Math.ceil((this.deadline - this.time.now) / 1000));
-    this.hud.setText(`Coins: ${this.score}                       Time: ${seconds}s`);
+    const levelCoins = this.score - this.levelStartScore;
+    this.hud.setText(`Level ${this.level}   Coins: ${levelCoins}/${this.levelConfig.coins}`
+      + `   Total: ${this.score}   Time: ${seconds}s`);
     if (seconds === 0) this.finish('Time is up!');
+  }
+
+  completeLevel() {
+    if (this.level >= COIN_DASH.levels.length) {
+      this.won = true;
+      this.finish('You win! All levels cleared!');
+      return;
+    }
+    this.finished = true;
+    this.physics.pause();
+    this.showMessage(`Level ${this.level} complete!\nGet ready for level ${this.level + 1}...`);
+    this.time.delayedCall(1800, () =>
+      this.scene.restart({ level: this.level + 1, score: this.score }));
+  }
+
+  showMessage(text) {
+    const c = COIN_DASH;
+    this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
+    this.add.text(c.width / 2, c.height / 2, text,
+      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
+    ).setOrigin(0.5);
   }
 
   finish(reason) {
     if (this.finished) return;
     this.finished = true;
     this.physics.pause();
-    const c = COIN_DASH;
-    this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
-    this.add.text(c.width / 2, c.height / 2,
-      `${reason}\n${this.score} coins collected\nPress R to try again`,
-      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
-    ).setOrigin(0.5);
+    const retry = this.won ? 'Press R to play again' : `Press R to retry level ${this.level}`;
+    this.showMessage(`${reason}\n${this.score} coins collected\n${retry}`);
   }
 }
 window.coinDashGame = new Phaser.Game({
