@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH, CoinSound, makeDollarTexture, createBusinessmanTexture */
+/* global Phaser, COIN_DASH, CoinSound, makeDollarTexture, createBusinessmanTexture, addLevelBackground */
 // Phaser splits the `font` shorthand on spaces, so a family list must go in fontFamily.
 const GAME_FONT = '"Avenir Next", "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
 const PANEL_TEXT = {
@@ -17,8 +17,7 @@ class CoinDash extends Phaser.Scene {
     this.finished = false;
     this.won = false;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
-    this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
-      c.colors.background, 1, 0x24334b, 0.45);
+    addLevelBackground(this, this.level);
     this.add.rectangle(c.width / 2, 22, c.width, 44, 0x070d19, 0.75);
     this.add.rectangle(c.width / 2, 44, c.width, 2, 0xffd166, 0.35);
     this.hud = this.add.text(18, 12, '', {
