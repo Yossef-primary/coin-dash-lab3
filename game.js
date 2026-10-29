@@ -16,6 +16,9 @@ class CoinDash extends Phaser.Scene {
     this.levelStartScore = this.score;
     this.finished = false;
     this.won = false;
+    this.lives = c.lives;
+    this.invulnerableUntil = 0;
+    this.knockbackUntil = 0;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     addLevelBackground(this, this.level);
     this.add.rectangle(c.width / 2, 22, c.width, 44, 0x070d19, 0.75);
@@ -44,10 +47,11 @@ class CoinDash extends Phaser.Scene {
       if (this.finished) return;
       this.score++;
       CoinSound.coin();
+      this.coinFx(this.coin.x, this.coin.y);
       if (this.score - this.levelStartScore >= lv.coins) this.completeLevel();
       else this.placeCoin();
     });
-    this.physics.add.overlap(this.player, this.drones, () => this.finish(ROBBER.caughtMessage));
+    this.physics.add.overlap(this.player, this.drones, (player, drone) => this.hurt(drone));
     // Shooting: Space fires along the last move direction; ammo refills every level.
     this.ammo = c.shooting.ammoPerLevel;
     this.nextShotAt = 0;
@@ -56,6 +60,7 @@ class CoinDash extends Phaser.Scene {
     this.physics.add.overlap(this.bullets, this.drones, (bullet, drone) => {
       if (this.finished) return;
       this.burst(drone.x, drone.y);
+      this.cameras.main.shake(120, 0.006);
       bullet.destroy();
       drone.destroy();
       CoinSound.boom();
@@ -78,7 +83,7 @@ class CoinDash extends Phaser.Scene {
     const lv = this.levelConfig;
     this.started = false;
     this.physics.pause();
-    this.hud.setText(`Level ${this.level}   Coins: 0/${lv.coins}   Total: ${this.score}   Time: ${lv.seconds}s   Ammo: ${this.ammo}`);
+    this.hud.setText(`Level ${this.level}   Coins: 0/${lv.coins}   Total: ${this.score}   Time: ${lv.seconds}s   Ammo: ${this.ammo}   ${this.livesText()}`);
     const panel = this.drawPanel(560, 170);
     const text = this.add.text(c.width / 2, c.height / 2, c.greeting,
       PANEL_TEXT
@@ -116,7 +121,8 @@ class CoinDash extends Phaser.Scene {
     const dy = Number(this.cursors.down.isDown || this.keys.S.isDown)
       - Number(this.cursors.up.isDown || this.keys.W.isDown);
     const direction = new Phaser.Math.Vector2(dx, dy).normalize().scale(COIN_DASH.playerSpeed);
-    this.player.body.setVelocity(direction.x, direction.y);
+    // While knocked back, let the push velocity play out instead of the input.
+    if (this.time.now >= this.knockbackUntil) this.player.body.setVelocity(direction.x, direction.y);
     if (dx) this.player.setFlipX(dx < 0);
     if (dx || dy) this.facing.set(dx, dy).normalize();
     this.bullets.getChildren().slice().forEach(b => {
@@ -125,7 +131,7 @@ class CoinDash extends Phaser.Scene {
     const seconds = Math.max(0, Math.ceil((this.deadline - this.time.now) / 1000));
     const levelCoins = this.score - this.levelStartScore;
     this.hud.setText(`Level ${this.level}   Coins: ${levelCoins}/${this.levelConfig.coins}`
-      + `   Total: ${this.score}   Time: ${seconds}s   Ammo: ${this.ammo}`);
+      + `   Total: ${this.score}   Time: ${seconds}s   Ammo: ${this.ammo}   ${this.livesText()}`);
     CoinSound.tick(seconds);
     if (seconds === 0) CoinSound.timeUp();
     if (seconds === 0) this.finish('Time is up!');
@@ -145,14 +151,70 @@ class CoinDash extends Phaser.Scene {
     CoinSound.shoot();
   }
 
+  livesText() {
+    return 'Lives: ' + '\u2665'.repeat(this.lives) + '\u2661'.repeat(COIN_DASH.lives - this.lives);
+  }
+
+  hurt(drone) {
+    // A robber hit costs a life; the last life ends the round. Brief invulnerability after each hit.
+    const h = COIN_DASH.hurt;
+    if (this.finished || this.time.now < this.invulnerableUntil) return;
+    this.lives--;
+    this.hitFx(this.player.x, this.player.y);
+    if (this.lives <= 0) {
+      this.finish(ROBBER.caughtMessage);
+      return;
+    }
+    CoinSound.hurt();
+    this.invulnerableUntil = this.time.now + h.invulnerableMs;
+    this.knockbackUntil = this.time.now + h.knockbackMs;
+    const away = new Phaser.Math.Vector2(this.player.x - drone.x, this.player.y - drone.y);
+    if (away.lengthSq() === 0) away.set(0, -1);
+    away.normalize().scale(h.knockback);
+    this.player.body.setVelocity(away.x, away.y);
+    this.player.setAlpha(1);
+    this.tweens.add({ targets: this.player, alpha: 0.2, duration: 100, yoyo: true,
+      repeat: Math.floor(h.invulnerableMs / 200) - 1, onComplete: () => this.player.setAlpha(1) });
+  }
+
+  hitFx(x, y) {
+    // Player hit: camera shake + red flash + a burst of red/orange shards.
+    this.cameras.main.shake(220, 0.012);
+    this.cameras.main.flash(180, 255, 40, 40);
+    const colors = [0xff3b3b, 0xff7a2f, 0xffb02e];
+    for (let i = 0; i < 14; i++) {
+      const a = Math.random() * Math.PI * 2, d = Phaser.Math.Between(25, 60);
+      const shard = this.add.rectangle(x, y, 5, 5, colors[i % 3]).setAngle(Math.random() * 90).setDepth(2);
+      this.tweens.add({ targets: shard, x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, angle: 360,
+        scale: 0.2, alpha: 0, duration: 450, ease: 'Cubic.easeOut', onComplete: () => shard.destroy() });
+    }
+  }
+
+  coinFx(x, y) {
+    // Coin collected: gold sparkles, a floating "+$1" and a squash/stretch pop on the player.
+    for (let i = 0; i < 10; i++) {
+      const a = i * Math.PI / 5, d = Phaser.Math.Between(18, 34);
+      const s = this.add.star(x, y, 4, 2, 5, COIN_DASH.colors.coin).setDepth(2);
+      this.tweens.add({ targets: s, x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, angle: 180,
+        alpha: 0, scale: 0.3, duration: 400, ease: 'Cubic.easeOut', onComplete: () => s.destroy() });
+    }
+    const label = this.add.text(x, y - 10, '+$1', {
+      fontFamily: GAME_FONT, fontSize: '18px', fontStyle: 'bold', color: '#ffd166'
+    }).setOrigin(0.5).setShadow(0, 2, '#000000', 3).setDepth(2);
+    this.tweens.add({ targets: label, y: y - 45, alpha: 0, duration: 700, ease: 'Sine.easeOut',
+      onComplete: () => label.destroy() });
+    this.tweens.add({ targets: this.player, scaleX: 1.25, scaleY: 0.8, duration: 70, yoyo: true,
+      onComplete: () => this.player.setScale(1) });
+  }
+
   burst(x, y) {
     // Small explosion: a flash ring plus a few sparks flying outwards, all fading away.
     const ring = this.add.circle(x, y, 6).setStrokeStyle(3, 0xffffff);
     this.tweens.add({ targets: ring, scale: 4, alpha: 0, duration: 300, onComplete: () => ring.destroy() });
-    for (let i = 0; i < 8; i++) {
-      const a = i * Math.PI / 4;
-      const spark = this.add.circle(x, y, 3, i % 2 ? COIN_DASH.colors.drone : COIN_DASH.colors.coin);
-      this.tweens.add({ targets: spark, x: x + Math.cos(a) * 30, y: y + Math.sin(a) * 30, alpha: 0,
+    for (let i = 0; i < 16; i++) {
+      const a = i * Math.PI / 8, d = i % 2 ? 30 : 48;
+      const spark = this.add.circle(x, y, i % 2 ? 3 : 4, i % 2 ? COIN_DASH.colors.drone : COIN_DASH.colors.coin);
+      this.tweens.add({ targets: spark, x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, alpha: 0,
         duration: 350, ease: 'Cubic.easeOut', onComplete: () => spark.destroy() });
     }
   }

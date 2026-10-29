@@ -12,6 +12,8 @@ window.COIN_DASH = {
     { coins: 8, seconds: 45, droneCount: 4, droneSpeed: 130 },
     { coins: 12, seconds: 50, droneCount: 5, droneSpeed: 155 }
   ],
+  lives: 3, // robber hits allowed per level (reset on each level start and on R retry)
+  hurt: { invulnerableMs: 1500, knockback: 320, knockbackMs: 180 },
   shooting: { cooldownMs: 350, ammoPerLevel: 5, bulletSpeed: 520, bulletLifeMs: 1200 },
   sound: { volume: 0.2, musicVolume: 0.3 }, // master gain for effects; music level relative to it (0..1)
   greeting: 'Hello, how are you?\nGood luck — have fun!\nPress any key to start',

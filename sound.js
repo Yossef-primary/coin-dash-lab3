@@ -67,6 +67,11 @@
       note('square', 466, 0, 0.35, 0.4, 58);
       note('triangle', 110, 0.3, 0.3, 0.7, 40);
     }),
+    // Hurt: short downward blip when a life is lost (does not end the round, unlike hit()).
+    hurt: safe(() => {
+      note('square', 330, 0, 0.12, 0.5, 120);
+      note('triangle', 160, 0.02, 0.12, 0.6, 70);
+    }),
     // Shoot: short square "pew" sliding down fast.
     shoot: safe(() => {
       note('square', 1400, 0, 0.08, 0.35, 300);
