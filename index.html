@@ -2,15 +2,66 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Coin Dash — Lab 3 starter</title>
+<meta name="theme-color" content="#0a1120">
+<title>Coin Dash — Money Chase</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main>
-  <header><p>LAB 3 · STARTER GAME</p><h1>Coin Dash</h1>
-  <p>Collect yellow coins. Dodge red drones. How many can you collect in 45 seconds?</p></header>
-  <div id="game" aria-label="Coin Dash game. Move with arrow keys or WASD."></div>
-  <p>Move: <strong>arrow keys / WASD</strong> · Restart: <strong>R</strong> · Mute: <strong>M</strong></p>
+  <header class="masthead">
+    <p class="eyebrow">Lab 3 · Money chase</p>
+    <h1 class="logo">
+      <svg viewBox="0 0 520 120" role="img" aria-labelledby="logo-title">
+        <title id="logo-title">Coin Dash</title>
+        <defs>
+          <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff1b8"/>
+            <stop offset=".45" stop-color="#ffd166"/>
+            <stop offset="1" stop-color="#e09a1f"/>
+          </linearGradient>
+          <linearGradient id="green" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#b6f5c9"/>
+            <stop offset="1" stop-color="#3fbf74"/>
+          </linearGradient>
+          <radialGradient id="coin-face" cx=".38" cy=".32" r=".75">
+            <stop offset="0" stop-color="#fff4c4"/>
+            <stop offset=".55" stop-color="#ffd166"/>
+            <stop offset="1" stop-color="#c98516"/>
+          </radialGradient>
+        </defs>
+        <!-- speed lines trailing the coin -->
+        <g stroke="#3fbf74" stroke-linecap="round" opacity=".85">
+          <line x1="4" y1="44" x2="30" y2="44" stroke-width="5"/>
+          <line x1="12" y1="60" x2="30" y2="60" stroke-width="5" stroke="#ffd166"/>
+          <line x1="0" y1="76" x2="30" y2="76" stroke-width="5"/>
+        </g>
+        <!-- coin mark -->
+        <g transform="translate(78 60)">
+          <circle r="44" fill="#8a5a0c"/>
+          <circle r="41" fill="url(#coin-face)"/>
+          <circle r="32" fill="none" stroke="#b97a12" stroke-width="2.5" stroke-dasharray="3 4"/>
+          <text y="19" text-anchor="middle" class="logo-dollar" fill="#7a4d06">$</text>
+          <path d="M-26 -22 A34 34 0 0 1 -6 -33" stroke="#fffbe6" stroke-width="5" stroke-linecap="round" fill="none" opacity=".8"/>
+        </g>
+        <!-- wordmark -->
+        <g class="logo-word" transform="skewX(-8)">
+          <text x="150" y="58" fill="url(#gold)" stroke="#5b3b05" stroke-width="1.5">COIN</text>
+          <text x="150" y="108" fill="url(#green)" stroke="#0d3b22" stroke-width="1.5">DASH</text>
+        </g>
+        <rect x="318" y="38" width="190" height="6" rx="3" fill="#ffd166" opacity=".9"/>
+        <rect x="350" y="52" width="158" height="4" rx="2" fill="#3fbf74" opacity=".7"/>
+      </svg>
+    </h1>
+    <p class="tagline">You're a businessman with places to be. Grab every <strong class="gold">bundle of cash</strong>, dodge the <strong class="red">mafia robbers</strong>, and see how rich you get in 45 seconds.</p>
+  </header>
+  <section class="stage">
+    <div id="game" aria-label="Coin Dash game. Move with arrow keys or WASD."></div>
+  </section>
+  <ul class="controls" aria-label="Controls">
+    <li><span class="keys"><kbd aria-label="Up">↑</kbd><kbd aria-label="Left">←</kbd><kbd aria-label="Down">↓</kbd><kbd aria-label="Right">→</kbd></span><span class="or">or</span><span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span> Move</li>
+    <li><kbd>R</kbd> Restart</li>
+    <li><kbd>M</kbd> Mute</li>
+  </ul>
 </main>
 <script src="vendor/phaser-3.90.0.min.js"></script>
 <script src="settings.js"></script>

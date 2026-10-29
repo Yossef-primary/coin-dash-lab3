@@ -1,4 +1,7 @@
 /* global Phaser, COIN_DASH, CoinSound, makeDollarTexture, createBusinessmanTexture */
+const PANEL_TEXT = {
+  font: '24px ui-monospace, Menlo, Consolas, monospace', color: '#f5f8ff', align: 'center', lineSpacing: 12
+};
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -9,7 +12,11 @@ class CoinDash extends Phaser.Scene {
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
-    this.hud = this.add.text(18, 12, '', { font: '18px monospace', color: '#ffffff' });
+    this.add.rectangle(c.width / 2, 22, c.width, 44, 0x070d19, 0.75);
+    this.add.rectangle(c.width / 2, 44, c.width, 2, 0xffd166, 0.35);
+    this.hud = this.add.text(18, 12, '', {
+      font: 'bold 18px ui-monospace, Menlo, Consolas, monospace', color: '#ffd166'
+    }).setShadow(0, 2, '#000000', 3);
     this.player = this.add.image(c.width / 2, c.height / 2, createBusinessmanTexture(this));
     this.physics.add.existing(this.player);
     this.player.body.setSize(24, 24).setOffset(0, 3);
@@ -46,11 +53,11 @@ class CoinDash extends Phaser.Scene {
     this.started = false;
     this.physics.pause();
     this.hud.setText(`Coins: ${this.score}                       Time: ${c.roundSeconds}s`);
-    const panel = this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
+    const panel = this.drawPanel(460, 150);
     // A trailing right-to-left mark keeps Hebrew punctuation on the correct side while staying centred.
     const lines = c.greeting.split('\n').map(line => line + '\u200F').join('\n');
     const text = this.add.text(c.width / 2, c.height / 2, lines,
-      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
+      PANEL_TEXT
     ).setOrigin(0.5);
     const start = () => {
       if (this.started) return;
@@ -99,11 +106,21 @@ class CoinDash extends Phaser.Scene {
     CoinSound.hit(); // no-op if timeUp() already ended the round
     this.physics.pause();
     const c = COIN_DASH;
-    this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
+    this.drawPanel(460, 150);
     this.add.text(c.width / 2, c.height / 2,
       `${reason}\n${this.score} coins collected\nPress R to try again`,
-      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
+      PANEL_TEXT
     ).setOrigin(0.5);
+  }
+
+  drawPanel(w, h) {
+    // Rounded, gold-bordered card for the greeting and end-of-round messages.
+    const c = COIN_DASH;
+    const x = (c.width - w) / 2, y = (c.height - h) / 2;
+    return this.add.graphics()
+      .fillStyle(0x000000, 0.35).fillRoundedRect(x + 4, y + 8, w, h, 16)
+      .fillStyle(0x0a1120, 0.96).fillRoundedRect(x, y, w, h, 16)
+      .lineStyle(2, 0xffd166, 0.85).strokeRoundedRect(x, y, w, h, 16);
   }
 }
 window.coinDashGame = new Phaser.Game({
