@@ -6,6 +6,6 @@ window.COIN_DASH = {
   playerSpeed: 240,
   droneSpeed: 105,
   droneCount: 3,
-  sound: { volume: 0.2 }, // master gain for procedural sound effects (0..1)
+  sound: { volume: 0.2, musicVolume: 0.3 }, // master gain for effects; music level relative to it (0..1)
   colors: { background: 0x101c31, player: 0x71e8ce, coin: 0xffd166, drone: 0xff657a }
 };
