@@ -6,7 +6,6 @@ class CoinDash extends Phaser.Scene {
     const c = COIN_DASH;
     this.score = 0;
     this.finished = false;
-    this.deadline = this.time.now + c.roundSeconds * 1000;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
@@ -35,6 +34,31 @@ class CoinDash extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
+    this.showGreeting();
+  }
+
+  showGreeting() {
+    // Freeze everything until the player presses a key or clicks; the timer starts then.
+    const c = COIN_DASH;
+    this.started = false;
+    this.physics.pause();
+    this.hud.setText(`Coins: ${this.score}                       Time: ${c.roundSeconds}s`);
+    const panel = this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
+    // A trailing right-to-left mark keeps Hebrew punctuation on the correct side while staying centred.
+    const lines = c.greeting.split('\n').map(line => line + '\u200F').join('\n');
+    const text = this.add.text(c.width / 2, c.height / 2, lines,
+      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
+    ).setOrigin(0.5);
+    const start = () => {
+      if (this.started) return;
+      this.started = true;
+      panel.destroy();
+      text.destroy();
+      this.deadline = this.time.now + c.roundSeconds * 1000;
+      this.physics.resume();
+    };
+    this.input.keyboard.once('keydown', start);
+    this.input.once('pointerdown', start);
   }
 
   placeCoin() {
@@ -50,7 +74,7 @@ class CoinDash extends Phaser.Scene {
   }
 
   update() {
-    if (this.finished) return;
+    if (this.finished || !this.started) return;
     const dx = Number(this.cursors.right.isDown || this.keys.D.isDown)
       - Number(this.cursors.left.isDown || this.keys.A.isDown);
     const dy = Number(this.cursors.down.isDown || this.keys.S.isDown)
