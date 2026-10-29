@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH */
+/* global Phaser, COIN_DASH, CoinSound */
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -7,6 +7,7 @@ class CoinDash extends Phaser.Scene {
     this.score = 0;
     this.finished = false;
     this.deadline = this.time.now + c.roundSeconds * 1000;
+    CoinSound.start();
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
@@ -29,6 +30,7 @@ class CoinDash extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
       this.score++;
+      CoinSound.coin();
       this.placeCoin();
     });
     this.physics.add.overlap(this.player, this.drones, () => this.finish('A drone caught you!'));
@@ -59,12 +61,15 @@ class CoinDash extends Phaser.Scene {
     this.player.body.setVelocity(direction.x, direction.y);
     const seconds = Math.max(0, Math.ceil((this.deadline - this.time.now) / 1000));
     this.hud.setText(`Coins: ${this.score}                       Time: ${seconds}s`);
+    CoinSound.tick(seconds);
+    if (seconds === 0) CoinSound.timeUp();
     if (seconds === 0) this.finish('Time is up!');
   }
 
   finish(reason) {
     if (this.finished) return;
     this.finished = true;
+    CoinSound.hit(); // no-op if timeUp() already ended the round
     this.physics.pause();
     const c = COIN_DASH;
     this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
