@@ -50,7 +50,7 @@ class StartScene extends Phaser.Scene {
     const cardW = Math.min(220, (c.width - 60 - gap * (levels.length - 1)) / levels.length);
     const cardH = 200;
     const startX = c.width / 2 - ((levels.length - 1) * (cardW + gap)) / 2;
-    const cardY = 300;
+    const cardY = 285;
     this.cards = levels.map((lv, i) => {
       const box = this.add.rectangle(0, 0, cardW, cardH, 0x0a1120, 0.92)
         .setStrokeStyle(2, 0x34445e).setInteractive({ useHandCursor: true });
@@ -76,9 +76,26 @@ class StartScene extends Phaser.Scene {
       return { card, box, go };
     });
 
-    this.add.text(c.width / 2, c.height - 28,
-      '← → or 1-' + levels.length + ' to choose · Enter / Space / click to play · M mute',
-      { font: '14px monospace', color: '#8a9bb5' }).setOrigin(0.5);
+    // Music selector: one small button per track, cycled with T or Up/Down.
+    const names = CoinSound.trackNames || [];
+    const btnW = 96;
+    const btnGap = 10;
+    const musicY = 432;
+    const rowX = c.width / 2 + 40 - ((names.length - 1) * (btnW + btnGap)) / 2;
+    this.add.text(rowX - btnW / 2 - 14, musicY, '♪ MUSIC',
+      { font: 'bold 14px monospace', color: '#8a9bb5' }).setOrigin(1, 0.5);
+    this.trackButtons = names.map((label, i) => {
+      const box = this.add.rectangle(rowX + i * (btnW + btnGap), musicY, btnW, 28, 0x0a1120, 0.92)
+        .setStrokeStyle(2, 0x34445e).setInteractive({ useHandCursor: true });
+      const text = this.add.text(box.x, musicY, label.toUpperCase(),
+        { font: 'bold 13px monospace', color: '#c9d6e8' }).setOrigin(0.5);
+      box.on('pointerdown', () => { CoinSound.unlock(); this.pickTrack(i); });
+      return { box, text };
+    });
+
+    this.add.text(c.width / 2, c.height - 22,
+      '← → or 1-' + levels.length + ' level · Enter / Space / click to play · T / ↑ ↓ music · M mute',
+      { font: '13px monospace', color: '#8a9bb5' }).setOrigin(0.5);
 
     const kb = this.input.keyboard;
     kb.on('keydown-LEFT', () => this.select(this.selected - 1, true));
@@ -87,12 +104,38 @@ class StartScene extends Phaser.Scene {
     kb.on('keydown-D', () => this.select(this.selected + 1, true));
     kb.on('keydown-ENTER', () => this.startLevel());
     kb.on('keydown-SPACE', () => this.startLevel());
+    kb.on('keydown-T', () => this.pickTrack(CoinSound.currentTrack() + 1));
+    kb.on('keydown-DOWN', () => this.pickTrack(CoinSound.currentTrack() + 1));
+    kb.on('keydown-S', () => this.pickTrack(CoinSound.currentTrack() + 1));
+    kb.on('keydown-UP', () => this.pickTrack(CoinSound.currentTrack() - 1));
+    kb.on('keydown-W', () => this.pickTrack(CoinSound.currentTrack() - 1));
     kb.on('keydown', (e) => {
       const n = Number(e.key);
       if (n >= 1 && n <= levels.length) this.select(n - 1, true);
     });
-    this.input.on('pointerdown', () => CoinSound.unlock());
+    // Menu music: plays the chosen track once audio is unlocked (first key or click).
+    this.input.on('pointerdown', () => { CoinSound.unlock(); CoinSound.musicStart(); });
+    CoinSound.musicStart();
     this.highlight();
+    this.highlightTrack();
+  }
+
+  pickTrack(index) {
+    if (!CoinSound.setTrack) return;
+    CoinSound.setTrack(index); // saved in localStorage, restarts the music if it is playing
+    CoinSound.musicStart();     // preview it (no-op until audio is unlocked)
+    this.highlightTrack();
+  }
+
+  highlightTrack() {
+    const c = COIN_DASH;
+    const hex = (n) => '#' + n.toString(16).padStart(6, '0');
+    const cur = CoinSound.currentTrack ? CoinSound.currentTrack() : 0;
+    this.trackButtons.forEach(({ box, text }, i) => {
+      const on = i === cur;
+      box.setStrokeStyle(on ? 3 : 2, on ? c.colors.coin : 0x34445e).setFillStyle(on ? 0x16243c : 0x0a1120, 0.92);
+      text.setColor(on ? hex(c.colors.coin) : '#c9d6e8');
+    });
   }
 
   select(index, wrap = false) {
