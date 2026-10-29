@@ -49,13 +49,27 @@ class CoinDash extends Phaser.Scene {
       else this.placeCoin();
     });
     this.physics.add.overlap(this.player, this.drones, () => this.finish(ROBBER.caughtMessage));
+    // Shooting: Space fires along the last move direction; ammo refills every level.
+    this.ammo = c.shooting.ammoPerLevel;
+    this.nextShotAt = 0;
+    this.facing = new Phaser.Math.Vector2(1, 0);
+    this.bullets = this.physics.add.group();
+    this.physics.add.overlap(this.bullets, this.drones, (bullet, drone) => {
+      if (this.finished) return;
+      this.burst(drone.x, drone.y);
+      bullet.destroy();
+      drone.destroy();
+      CoinSound.boom();
+    });
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
+    this.keys = this.input.keyboard.addKeys('W,A,S,D,R,SPACE');
     // R retries the current level (score back to where it began); after a win it starts over.
     this.input.keyboard.on('keydown-R', () => this.scene.restart(
       this.won ? {} : { level: this.level, score: this.levelStartScore }));
     // Esc goes back to the start screen, with the current level preselected.
     this.input.keyboard.on('keydown-ESC', () => this.scene.start('StartScene', { level: this.level }));
+    // An event (not JustDown polling) so quick taps that press and release within one frame still fire.
+    this.input.keyboard.on('keydown-SPACE', (event) => this.shoot(event));
     this.showGreeting();
   }
 
@@ -65,14 +79,15 @@ class CoinDash extends Phaser.Scene {
     const lv = this.levelConfig;
     this.started = false;
     this.physics.pause();
-    this.hud.setText(`Level ${this.level}   Coins: 0/${lv.coins}   Total: ${this.score}   Time: ${lv.seconds}s`);
+    this.hud.setText(`Level ${this.level}   Coins: 0/${lv.coins}   Total: ${this.score}   Time: ${lv.seconds}s   Ammo: ${this.ammo}`);
     const panel = this.drawPanel(560, 170);
     const text = this.add.text(c.width / 2, c.height / 2, c.greeting,
       PANEL_TEXT
     ).setOrigin(0.5);
-    const start = () => {
+    const start = (event) => {
       if (this.started) return;
       this.started = true;
+      this.greetingEvent = event; // the key press that starts the round must not also fire
       panel.destroy();
       text.destroy();
       this.deadline = this.time.now + lv.seconds * 1000;
@@ -104,13 +119,43 @@ class CoinDash extends Phaser.Scene {
     const direction = new Phaser.Math.Vector2(dx, dy).normalize().scale(COIN_DASH.playerSpeed);
     this.player.body.setVelocity(direction.x, direction.y);
     if (dx) this.player.setFlipX(dx < 0);
+    if (dx || dy) this.facing.set(dx, dy).normalize();
+    this.bullets.getChildren().slice().forEach(b => {
+      if (!this.physics.world.bounds.contains(b.x, b.y)) b.destroy();
+    });
     const seconds = Math.max(0, Math.ceil((this.deadline - this.time.now) / 1000));
     const levelCoins = this.score - this.levelStartScore;
     this.hud.setText(`Level ${this.level}   Coins: ${levelCoins}/${this.levelConfig.coins}`
-      + `   Total: ${this.score}   Time: ${seconds}s`);
+      + `   Total: ${this.score}   Time: ${seconds}s   Ammo: ${this.ammo}`);
     CoinSound.tick(seconds);
     if (seconds === 0) CoinSound.timeUp();
     if (seconds === 0) this.finish('Time is up!');
+  }
+
+  shoot(event) {
+    const sh = COIN_DASH.shooting;
+    if (!this.started || this.finished || event.repeat || event === this.greetingEvent) return;
+    if (this.ammo <= 0 || this.time.now < this.nextShotAt) return;
+    this.ammo--;
+    this.nextShotAt = this.time.now + sh.cooldownMs;
+    const bullet = this.add.circle(this.player.x + this.facing.x * 16, this.player.y + this.facing.y * 16,
+      4, COIN_DASH.colors.coin);
+    this.bullets.add(bullet);
+    bullet.body.setCircle(4).setVelocity(this.facing.x * sh.bulletSpeed, this.facing.y * sh.bulletSpeed);
+    this.time.delayedCall(sh.bulletLifeMs, () => bullet.destroy());
+    CoinSound.shoot();
+  }
+
+  burst(x, y) {
+    // Small explosion: a flash ring plus a few sparks flying outwards, all fading away.
+    const ring = this.add.circle(x, y, 6).setStrokeStyle(3, 0xffffff);
+    this.tweens.add({ targets: ring, scale: 4, alpha: 0, duration: 300, onComplete: () => ring.destroy() });
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4;
+      const spark = this.add.circle(x, y, 3, i % 2 ? COIN_DASH.colors.drone : COIN_DASH.colors.coin);
+      this.tweens.add({ targets: spark, x: x + Math.cos(a) * 30, y: y + Math.sin(a) * 30, alpha: 0,
+        duration: 350, ease: 'Cubic.easeOut', onComplete: () => spark.destroy() });
+    }
   }
 
   completeLevel() {

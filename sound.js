@@ -67,6 +67,16 @@
       note('square', 466, 0, 0.35, 0.4, 58);
       note('triangle', 110, 0.3, 0.3, 0.7, 40);
     }),
+    // Shoot: short square "pew" sliding down fast.
+    shoot: safe(() => {
+      note('square', 1400, 0, 0.08, 0.35, 300);
+    }),
+    // Boom: low square rumble with a falling triangle thud underneath.
+    boom: safe(() => {
+      note('square', 180, 0, 0.25, 0.5, 40);
+      note('square', 190, 0.02, 0.22, 0.35, 45);
+      note('triangle', 120, 0, 0.3, 0.7, 30);
+    }),
     // Time up: descending minor arpeggio ending on a low held note.
     timeUp: safe(() => {
       if (roundOver) return;
