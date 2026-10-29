@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH */
+/* global Phaser, COIN_DASH, makeDollarTexture */
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -14,9 +14,10 @@ class CoinDash extends Phaser.Scene {
     this.player = this.add.rectangle(c.width / 2, c.height / 2, 24, 24, c.colors.player);
     this.physics.add.existing(this.player);
     this.player.body.setCollideWorldBounds(true);
-    this.coin = this.add.circle(100, 100, 9, c.colors.coin);
+    makeDollarTexture(this, 'dollar');
+    this.coin = this.add.image(100, 100, 'dollar');
     this.physics.add.existing(this.coin);
-    this.coin.body.setCircle(9);
+    this.coin.body.setCircle(9, this.coin.width / 2 - 9, this.coin.height / 2 - 9);
     this.placeCoin();
     this.drones = this.physics.add.group();
     for (let i = 0; i < c.droneCount; i++) {
