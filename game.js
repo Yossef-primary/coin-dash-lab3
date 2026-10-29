@@ -2,10 +2,14 @@
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
-  create() {
+  create(data = {}) {
     const c = COIN_DASH;
-    this.score = 0;
+    this.level = data.level || 1;
+    const lv = this.levelConfig = c.levels[this.level - 1];
+    this.score = data.score || 0;
+    this.levelStartScore = this.score;
     this.finished = false;
+    this.won = false;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
@@ -20,32 +24,38 @@ class CoinDash extends Phaser.Scene {
     this.coin.body.setCircle(9, this.coin.width / 2 - 9, this.coin.height / 2 - 9);
     this.placeCoin();
     this.drones = this.physics.add.group();
-    for (let i = 0; i < c.droneCount; i++) {
-      const drone = ROBBER.create(this, 90 + i * 270, 100);
+    for (let i = 0; i < lv.droneCount; i++) {
+      const drone = ROBBER.create(this, (i + 0.5) * c.width / lv.droneCount, 100);
       this.drones.add(drone);
       drone.body.setCollideWorldBounds(true).setBounce(1, 1);
       const angle = (35 + i * 105) * Math.PI / 180;
-      drone.body.setVelocity(Math.cos(angle) * c.droneSpeed, Math.sin(angle) * c.droneSpeed);
+      drone.body.setVelocity(Math.cos(angle) * lv.droneSpeed, Math.sin(angle) * lv.droneSpeed);
     }
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
       this.score++;
       CoinSound.coin();
-      this.placeCoin();
+      if (this.score - this.levelStartScore >= lv.coins) this.completeLevel();
+      else this.placeCoin();
     });
     this.physics.add.overlap(this.player, this.drones, () => this.finish(ROBBER.caughtMessage));
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
-    this.input.keyboard.on('keydown-R', () => this.scene.restart());
+    // R retries the current level (score back to where it began); after a win it starts over.
+    this.input.keyboard.on('keydown-R', () => this.scene.restart(
+      this.won ? {} : { level: this.level, score: this.levelStartScore }));
+    // Esc goes back to the start screen, with the current level preselected.
+    this.input.keyboard.on('keydown-ESC', () => this.scene.start('StartScene', { level: this.level }));
     this.showGreeting();
   }
 
   showGreeting() {
-    // Freeze everything until the player presses a key or clicks; the timer starts then.
+    // Freeze everything until the player presses a key or clicks; the level timer starts then.
     const c = COIN_DASH;
+    const lv = this.levelConfig;
     this.started = false;
     this.physics.pause();
-    this.hud.setText(`Coins: ${this.score}                       Time: ${c.roundSeconds}s`);
+    this.hud.setText(`Level ${this.level}   Coins: 0/${lv.coins}   Total: ${this.score}   Time: ${lv.seconds}s`);
     const panel = this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
     // A trailing right-to-left mark keeps Hebrew punctuation on the correct side while staying centred.
     const lines = c.greeting.split('\n').map(line => line + '\u200F').join('\n');
@@ -57,7 +67,7 @@ class CoinDash extends Phaser.Scene {
       this.started = true;
       panel.destroy();
       text.destroy();
-      this.deadline = this.time.now + c.roundSeconds * 1000;
+      this.deadline = this.time.now + lv.seconds * 1000;
       CoinSound.start();
       this.physics.resume();
     };
@@ -87,23 +97,43 @@ class CoinDash extends Phaser.Scene {
     this.player.body.setVelocity(direction.x, direction.y);
     if (dx) this.player.setFlipX(dx < 0);
     const seconds = Math.max(0, Math.ceil((this.deadline - this.time.now) / 1000));
-    this.hud.setText(`Coins: ${this.score}                       Time: ${seconds}s`);
+    const levelCoins = this.score - this.levelStartScore;
+    this.hud.setText(`Level ${this.level}   Coins: ${levelCoins}/${this.levelConfig.coins}`
+      + `   Total: ${this.score}   Time: ${seconds}s`);
     CoinSound.tick(seconds);
     if (seconds === 0) CoinSound.timeUp();
     if (seconds === 0) this.finish('Time is up!');
   }
 
+  completeLevel() {
+    if (this.level >= COIN_DASH.levels.length) {
+      this.won = true;
+      this.finish('You win! All levels cleared!');
+      return;
+    }
+    this.finished = true;
+    this.physics.pause();
+    this.showMessage(`Level ${this.level} complete!\nGet ready for level ${this.level + 1}...`);
+    this.time.delayedCall(1800, () =>
+      this.scene.restart({ level: this.level + 1, score: this.score }));
+  }
+
+  showMessage(text) {
+    const c = COIN_DASH;
+    const label = this.add.text(c.width / 2, c.height / 2, text,
+      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
+    ).setOrigin(0.5).setDepth(1);
+    this.add.rectangle(c.width / 2, c.height / 2,
+      Math.max(460, label.width + 60), Math.max(150, label.height + 40), 0x0a1120, 0.95);
+  }
+
   finish(reason) {
     if (this.finished) return;
     this.finished = true;
-    CoinSound.hit(); // no-op if timeUp() already ended the round
+    if (!this.won) CoinSound.hit(); // no-op if timeUp() already ended the round
     this.physics.pause();
-    const c = COIN_DASH;
-    this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
-    this.add.text(c.width / 2, c.height / 2,
-      `${reason}\n${this.score} coins collected\nPress R to try again`,
-      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
-    ).setOrigin(0.5);
+    const retry = this.won ? 'Press R to play again' : `Press R to retry level ${this.level}`;
+    this.showMessage(`${reason}\n${this.score} coins collected\n${retry}\nEsc for level select`);
   }
 }
 window.coinDashGame = new Phaser.Game({
@@ -114,5 +144,5 @@ window.coinDashGame = new Phaser.Game({
   backgroundColor: COIN_DASH.colors.background,
   physics: { default: 'arcade', arcade: { debug: false } },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
-  scene: CoinDash
+  scene: [StartScene, CoinDash]
 });
