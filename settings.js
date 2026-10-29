@@ -7,6 +7,6 @@ window.COIN_DASH = {
   droneSpeed: 105,
   droneCount: 3,
   sound: { volume: 0.2 }, // master gain for procedural sound effects (0..1)
-  greeting: 'שלום, מה שלומך?\nבהצלחה במשחק ותהנה!\nלחץ על מקש כלשהו כדי להתחיל',
+  greeting: 'Hello, how are you?\nGood luck — have fun!\nPress any key to start',
   colors: { background: 0x101c31, player: 0x71e8ce, coin: 0xffd166, drone: 0xff657a }
 };

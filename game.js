@@ -1,6 +1,9 @@
 /* global Phaser, COIN_DASH, CoinSound, makeDollarTexture, createBusinessmanTexture */
+// Phaser splits the `font` shorthand on spaces, so a family list must go in fontFamily.
+const GAME_FONT = '"Avenir Next", "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
 const PANEL_TEXT = {
-  font: '24px ui-monospace, Menlo, Consolas, monospace', color: '#f5f8ff', align: 'center', lineSpacing: 12
+  fontFamily: GAME_FONT, fontSize: '24px', fontStyle: 'bold',
+  color: '#f5f8ff', align: 'center', lineSpacing: 10, wordWrap: { width: 520 }
 };
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
@@ -15,7 +18,7 @@ class CoinDash extends Phaser.Scene {
     this.add.rectangle(c.width / 2, 22, c.width, 44, 0x070d19, 0.75);
     this.add.rectangle(c.width / 2, 44, c.width, 2, 0xffd166, 0.35);
     this.hud = this.add.text(18, 12, '', {
-      font: 'bold 18px ui-monospace, Menlo, Consolas, monospace', color: '#ffd166'
+      fontFamily: GAME_FONT, fontSize: '18px', fontStyle: 'bold', color: '#ffd166'
     }).setShadow(0, 2, '#000000', 3);
     this.player = this.add.image(c.width / 2, c.height / 2, createBusinessmanTexture(this));
     this.physics.add.existing(this.player);
@@ -53,10 +56,8 @@ class CoinDash extends Phaser.Scene {
     this.started = false;
     this.physics.pause();
     this.hud.setText(`Coins: ${this.score}                       Time: ${c.roundSeconds}s`);
-    const panel = this.drawPanel(460, 150);
-    // A trailing right-to-left mark keeps Hebrew punctuation on the correct side while staying centred.
-    const lines = c.greeting.split('\n').map(line => line + '\u200F').join('\n');
-    const text = this.add.text(c.width / 2, c.height / 2, lines,
+    const panel = this.drawPanel(560, 170);
+    const text = this.add.text(c.width / 2, c.height / 2, c.greeting,
       PANEL_TEXT
     ).setOrigin(0.5);
     const start = () => {
@@ -106,9 +107,9 @@ class CoinDash extends Phaser.Scene {
     CoinSound.hit(); // no-op if timeUp() already ended the round
     this.physics.pause();
     const c = COIN_DASH;
-    this.drawPanel(460, 150);
+    this.drawPanel(560, 210);
     this.add.text(c.width / 2, c.height / 2,
-      `${reason}\n${this.score} coins collected\nPress R to try again`,
+      `${reason}\n$${this.score} collected\nPress R to try again`,
       PANEL_TEXT
     ).setOrigin(0.5);
   }

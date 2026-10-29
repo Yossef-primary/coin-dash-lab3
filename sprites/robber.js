@@ -4,7 +4,7 @@
 window.ROBBER = {
   key: 'robber',
   size: 26,
-  caughtMessage: 'שדדו אותך! המאפיונר לקח הכל\nוהוציא אותך מהמשחק',
+  caughtMessage: "You've been robbed!\nThe mafia took it all — you're out of business.",
 
   makeTexture(scene) {
     if (scene.textures.exists(this.key)) return this.key;
