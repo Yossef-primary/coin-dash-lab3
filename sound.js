@@ -95,7 +95,9 @@
       try { if (master) master.gain.value = muted ? 0 : MASTER_VOLUME; } catch (e) { /* ignore */ }
       return muted;
     },
-    isMuted() { return muted; }
+    isMuted() { return muted; },
+    // Shared context + master gain for music.js (null until the first keydown unlocks audio).
+    _audio() { return { ctx, master }; }
   };
 
   // Registered once at page load (not per scene), so scene restarts cannot duplicate it.
