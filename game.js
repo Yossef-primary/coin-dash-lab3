@@ -44,6 +44,8 @@ class CoinDash extends Phaser.Scene {
     // R retries the current level (score back to where it began); after a win it starts over.
     this.input.keyboard.on('keydown-R', () => this.scene.restart(
       this.won ? {} : { level: this.level, score: this.levelStartScore }));
+    // Esc goes back to the start screen, with the current level preselected.
+    this.input.keyboard.on('keydown-ESC', () => this.scene.start('StartScene', { level: this.level }));
   }
 
   placeCoin() {
@@ -90,10 +92,11 @@ class CoinDash extends Phaser.Scene {
 
   showMessage(text) {
     const c = COIN_DASH;
-    this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
-    this.add.text(c.width / 2, c.height / 2, text,
+    const label = this.add.text(c.width / 2, c.height / 2, text,
       { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
-    ).setOrigin(0.5);
+    ).setOrigin(0.5).setDepth(1);
+    this.add.rectangle(c.width / 2, c.height / 2,
+      Math.max(460, label.width + 60), Math.max(150, label.height + 40), 0x0a1120, 0.95);
   }
 
   finish(reason) {
@@ -102,7 +105,7 @@ class CoinDash extends Phaser.Scene {
     if (!this.won) CoinSound.hit(); // no-op if timeUp() already ended the round
     this.physics.pause();
     const retry = this.won ? 'Press R to play again' : `Press R to retry level ${this.level}`;
-    this.showMessage(`${reason}\n${this.score} coins collected\n${retry}`);
+    this.showMessage(`${reason}\n${this.score} coins collected\n${retry}\nEsc for level select`);
   }
 }
 window.coinDashGame = new Phaser.Game({
@@ -113,5 +116,5 @@ window.coinDashGame = new Phaser.Game({
   backgroundColor: COIN_DASH.colors.background,
   physics: { default: 'arcade', arcade: { debug: false } },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
-  scene: CoinDash
+  scene: [StartScene, CoinDash]
 });
