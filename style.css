@@ -1,7 +1,123 @@
+:root {
+  --navy-900: #070d19;
+  --navy-800: #0a1120;
+  --navy-700: #101c31;
+  --navy-600: #1a2943;
+  --line: #2a3b58;
+  --text: #e5edf7;
+  --muted: #93a4bf;
+  --gold: #ffd166;
+  --gold-deep: #e09a1f;
+  --green: #3fbf74;
+  --mint: #71e8ce;
+  --red: #ff657a;
+  --display: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
 * { box-sizing: border-box; }
-body { margin: 0; background: #0a1120; color: #e5edf7; font: 17px/1.5 system-ui, sans-serif; }
-main { max-width: 850px; margin: 30px auto; padding: 0 20px; }
-header > p:first-child { color: #71e8ce; font-size: 12px; letter-spacing: .15em; }
-h1 { margin: 0; font-size: 40px; }
-#game { border: 1px solid #34445e; border-radius: 12px; overflow: hidden; }
+
+html { background: var(--navy-900); }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  font: 17px/1.55 var(--display);
+  background:
+    radial-gradient(900px 420px at 50% -120px, rgba(255, 209, 102, .13), transparent 70%),
+    radial-gradient(700px 500px at 100% 100%, rgba(63, 191, 116, .08), transparent 70%),
+    linear-gradient(var(--navy-800), var(--navy-900));
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+main { max-width: 880px; margin: 0 auto; padding: 28px 20px 40px; }
+
+/* ---------- header ---------- */
+.masthead { text-align: center; margin-bottom: 22px; }
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 6px;
+  padding: 3px 12px;
+  border: 1px solid rgba(113, 232, 206, .35);
+  border-radius: 999px;
+  color: var(--mint);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.logo { margin: 0 auto; width: min(100%, 440px); line-height: 0; }
+.logo svg { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .45)); }
+.logo-word text {
+  font-family: "Avenir Next", "Helvetica Neue", "Arial Black", system-ui, sans-serif;
+  font-size: 56px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 2px;
+  paint-order: stroke;
+}
+.logo-dollar { font: 900 54px/1 Georgia, "Times New Roman", serif; }
+.tagline { max-width: 560px; margin: 10px auto 0; color: var(--muted); font-size: 16px; }
+.tagline strong { font-weight: 700; }
+.gold { color: var(--gold); }
+.red { color: var(--red); }
+
+/* ---------- game frame ---------- */
+.stage {
+  position: relative;
+  padding: 8px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255, 209, 102, .55), rgba(42, 59, 88, .9) 35%, rgba(42, 59, 88, .9) 65%, rgba(63, 191, 116, .55));
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, .04),
+    0 24px 60px -18px rgba(0, 0, 0, .8),
+    0 0 50px -10px rgba(255, 209, 102, .18);
+}
+#game {
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--navy-700);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .5);
+}
+#game:focus-within, .stage:focus-within { outline: none; }
 canvas { display: block; }
+
+/* ---------- controls ---------- */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 26px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 15px;
+}
+.controls li { display: flex; align-items: center; gap: 6px; }
+.keys { display: inline-flex; gap: 4px; }
+.or { margin: 0 4px; font-size: 13px; opacity: .7; }
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid #3a4d6e;
+  border-bottom-width: 3px;
+  border-radius: 7px;
+  background: linear-gradient(#22334f, #18253c);
+  color: var(--text);
+  font: 600 13px/1 ui-monospace, Menlo, monospace;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .35);
+}
+.controls li:last-child kbd, .controls li:nth-child(2) kbd { color: var(--gold); }
+
+@media (max-width: 560px) {
+  main { padding: 18px 16px 28px; }
+  .tagline { font-size: 15px; }
+  .stage { padding: 5px; border-radius: 14px; }
+  #game { border-radius: 10px; }
+  .controls { gap: 10px 18px; font-size: 14px; }
+  kbd { min-width: 25px; height: 25px; padding: 0 5px; font-size: 12px; }
+}

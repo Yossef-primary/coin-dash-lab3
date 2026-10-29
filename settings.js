@@ -13,6 +13,6 @@ window.COIN_DASH = {
     { coins: 12, seconds: 50, droneCount: 5, droneSpeed: 155 }
   ],
   sound: { volume: 0.2, musicVolume: 0.3 }, // master gain for effects; music level relative to it (0..1)
-  greeting: 'שלום, מה שלומך?\nבהצלחה במשחק ותהנה!\nלחץ על מקש כלשהו כדי להתחיל',
+  greeting: 'Hello, how are you?\nGood luck — have fun!\nPress any key to start',
   colors: { background: 0x101c31, player: 0x71e8ce, coin: 0xffd166, drone: 0xff657a }
 };

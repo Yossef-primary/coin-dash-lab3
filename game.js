@@ -1,4 +1,10 @@
 /* global Phaser, COIN_DASH, CoinSound, makeDollarTexture, createBusinessmanTexture */
+// Phaser splits the `font` shorthand on spaces, so a family list must go in fontFamily.
+const GAME_FONT = '"Avenir Next", "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
+const PANEL_TEXT = {
+  fontFamily: GAME_FONT, fontSize: '24px', fontStyle: 'bold',
+  color: '#f5f8ff', align: 'center', lineSpacing: 10, wordWrap: { width: 520 }
+};
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -13,7 +19,11 @@ class CoinDash extends Phaser.Scene {
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
-    this.hud = this.add.text(18, 12, '', { font: '18px monospace', color: '#ffffff' });
+    this.add.rectangle(c.width / 2, 22, c.width, 44, 0x070d19, 0.75);
+    this.add.rectangle(c.width / 2, 44, c.width, 2, 0xffd166, 0.35);
+    this.hud = this.add.text(18, 12, '', {
+      fontFamily: GAME_FONT, fontSize: '18px', fontStyle: 'bold', color: '#ffd166'
+    }).setShadow(0, 2, '#000000', 3);
     this.player = this.add.image(c.width / 2, c.height / 2, createBusinessmanTexture(this));
     this.physics.add.existing(this.player);
     this.player.body.setSize(24, 24).setOffset(0, 3);
@@ -56,11 +66,9 @@ class CoinDash extends Phaser.Scene {
     this.started = false;
     this.physics.pause();
     this.hud.setText(`Level ${this.level}   Coins: 0/${lv.coins}   Total: ${this.score}   Time: ${lv.seconds}s`);
-    const panel = this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
-    // A trailing right-to-left mark keeps Hebrew punctuation on the correct side while staying centred.
-    const lines = c.greeting.split('\n').map(line => line + '\u200F').join('\n');
-    const text = this.add.text(c.width / 2, c.height / 2, lines,
-      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
+    const panel = this.drawPanel(560, 170);
+    const text = this.add.text(c.width / 2, c.height / 2, c.greeting,
+      PANEL_TEXT
     ).setOrigin(0.5);
     const start = () => {
       if (this.started) return;
@@ -120,11 +128,8 @@ class CoinDash extends Phaser.Scene {
 
   showMessage(text) {
     const c = COIN_DASH;
-    const label = this.add.text(c.width / 2, c.height / 2, text,
-      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
-    ).setOrigin(0.5).setDepth(1);
-    this.add.rectangle(c.width / 2, c.height / 2,
-      Math.max(460, label.width + 60), Math.max(150, label.height + 40), 0x0a1120, 0.95);
+    const label = this.add.text(c.width / 2, c.height / 2, text, PANEL_TEXT).setOrigin(0.5).setDepth(1);
+    this.drawPanel(Math.max(560, label.width + 60), Math.max(170, label.height + 40));
   }
 
   finish(reason) {
@@ -133,7 +138,17 @@ class CoinDash extends Phaser.Scene {
     if (!this.won) CoinSound.hit(); // no-op if timeUp() already ended the round
     this.physics.pause();
     const retry = this.won ? 'Press R to play again' : `Press R to retry level ${this.level}`;
-    this.showMessage(`${reason}\n${this.score} coins collected\n${retry}\nEsc for level select`);
+    this.showMessage(`${reason}\n$${this.score} collected\n${retry}\nEsc for level select`);
+  }
+
+  drawPanel(w, h) {
+    // Rounded, gold-bordered card for the greeting and end-of-round messages.
+    const c = COIN_DASH;
+    const x = (c.width - w) / 2, y = (c.height - h) / 2;
+    return this.add.graphics()
+      .fillStyle(0x000000, 0.35).fillRoundedRect(x + 4, y + 8, w, h, 16)
+      .fillStyle(0x0a1120, 0.96).fillRoundedRect(x, y, w, h, 16)
+      .lineStyle(2, 0xffd166, 0.85).strokeRoundedRect(x, y, w, h, 16);
   }
 }
 window.coinDashGame = new Phaser.Game({
