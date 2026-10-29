@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH */
+/* global Phaser, COIN_DASH, CoinSound */
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -11,6 +11,7 @@ class CoinDash extends Phaser.Scene {
     this.finished = false;
     this.won = false;
     this.deadline = this.time.now + lv.seconds * 1000;
+    CoinSound.start();
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
@@ -33,6 +34,7 @@ class CoinDash extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
       this.score++;
+      CoinSound.coin();
       if (this.score - this.levelStartScore >= lv.coins) this.completeLevel();
       else this.placeCoin();
     });
@@ -68,6 +70,8 @@ class CoinDash extends Phaser.Scene {
     const levelCoins = this.score - this.levelStartScore;
     this.hud.setText(`Level ${this.level}   Coins: ${levelCoins}/${this.levelConfig.coins}`
       + `   Total: ${this.score}   Time: ${seconds}s`);
+    CoinSound.tick(seconds);
+    if (seconds === 0) CoinSound.timeUp();
     if (seconds === 0) this.finish('Time is up!');
   }
 
@@ -95,6 +99,7 @@ class CoinDash extends Phaser.Scene {
   finish(reason) {
     if (this.finished) return;
     this.finished = true;
+    if (!this.won) CoinSound.hit(); // no-op if timeUp() already ended the round
     this.physics.pause();
     const retry = this.won ? 'Press R to play again' : `Press R to retry level ${this.level}`;
     this.showMessage(`${reason}\n${this.score} coins collected\n${retry}`);
