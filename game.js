@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH, CoinSound, makeDollarTexture */
+/* global Phaser, COIN_DASH, CoinSound, makeDollarTexture, createBusinessmanTexture */
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -12,8 +12,9 @@ class CoinDash extends Phaser.Scene {
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
     this.hud = this.add.text(18, 12, '', { font: '18px monospace', color: '#ffffff' });
-    this.player = this.add.rectangle(c.width / 2, c.height / 2, 24, 24, c.colors.player);
+    this.player = this.add.image(c.width / 2, c.height / 2, createBusinessmanTexture(this));
     this.physics.add.existing(this.player);
+    this.player.body.setSize(24, 24).setOffset(0, 3);
     this.player.body.setCollideWorldBounds(true);
     makeDollarTexture(this, 'dollar');
     this.coin = this.add.image(100, 100, 'dollar');
@@ -60,6 +61,7 @@ class CoinDash extends Phaser.Scene {
       - Number(this.cursors.up.isDown || this.keys.W.isDown);
     const direction = new Phaser.Math.Vector2(dx, dy).normalize().scale(COIN_DASH.playerSpeed);
     this.player.body.setVelocity(direction.x, direction.y);
+    if (dx) this.player.setFlipX(dx < 0);
     const seconds = Math.max(0, Math.ceil((this.deadline - this.time.now) / 1000));
     this.hud.setText(`Coins: ${this.score}                       Time: ${seconds}s`);
     CoinSound.tick(seconds);
